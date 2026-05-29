@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html >
+<head>
+<meta charset="UTF-8">
+<title>Welcome</title>
+</head>
+<body>
+<h1>Welcome to Java</h1>
+<form method="post" enctype="multipart/form-data" id="uploadForm">
+데이터 : <input type="text" name="message" value="test hello"><p>
+파일 : <input type="file" name="file"> <p>
+<button type="button" id="uploadBtn"> 비동기 요청 </button>
+</form>
+<div id="result">여기에 요청 결과가 출력되어야 합니다.</div>
+<script>
+    const button = document.getElementById('uploadBtn');
+    const form = document.getElementById('uploadForm');
+    const resultDiv = document.getElementById('result');
+    const SERVER_URL = 'http://localhost:8080/api/detect/proxy';
+    
+    button.addEventListener('click', () => {
+        const formData = new FormData(form);
+        button.disabled = true; // 버튼 비활성화
+        resultDiv.innerHTML = "요청 중 입니다....";    
+        
+        fetch(SERVER_URL, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("서버 응답 오류: " + response.status);
+            return response.json();
+        })
+        .then(data => {
+            resultDiv.innerHTML = `<strong>${data.message}</strong><br>`;
+            if (data.image) {
+                const img = document.createElement('img');
+                img.src = "data:image/jpg;base64," + data.image; // Base64 인코딩된 이미지 데이터
+                resultDiv.appendChild(img);
+            }
+        })
+        .catch(error => {
+            console.error('요청 실패:', error);
+            resultDiv.innerHTML = `<span style="color:red;">오류 발생: ${error.message}</span>`;
+        })
+        .finally(() => {
+            button.disabled = false; // 버튼 재활성화
+        });
+    });
+</script>
+    // 서버의 업로드 엔드포인트 URL
+</body>
+</html>
