@@ -1,41 +1,68 @@
 <!DOCTYPE html>
-<html >
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Welcome</title>
+<title>YOLO Object Detection</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+  h1 { color: #333; }
+  label { margin-right: 16px; cursor: pointer; }
+  #uploadBtn { margin-top: 12px; padding: 8px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+  #uploadBtn:disabled { background: #aaa; }
+  #result { margin-top: 20px; padding: 12px; border: 1px solid #ddd; border-radius: 4px; min-height: 40px; }
+  #result img { max-width: 100%; margin-top: 10px; display: block; }
+  .meta { font-size: 0.85em; color: #555; margin-bottom: 8px; }
+</style>
 </head>
 <body>
-<h1>Welcome to Java</h1>
-<form method="post" enctype="multipart/form-data" id="uploadForm">
-데이터 : <input type="text" name="message" value="test hello"><p>
-파일 : <input type="file" name="file"> <p>
-<button type="button" id="uploadBtn"> 비동기 요청 </button>
+<h1>YOLO Object Detection</h1>
+<form id="uploadForm">
+  데이터 : <input type="text" name="message" value="test hello"><p>
+  파일 : <input type="file" name="file" accept="image/*"><p>
+  응답 형식 :
+  <label><input type="radio" name="format" value="base64" checked> Base64</label>
+  <label><input type="radio" name="format" value="url"> URL</label><p>
+  <button type="button" id="uploadBtn">비동기 요청</button>
 </form>
 <div id="result">여기에 요청 결과가 출력되어야 합니다.</div>
+
 <script>
     const button = document.getElementById('uploadBtn');
     const form = document.getElementById('uploadForm');
     const resultDiv = document.getElementById('result');
     const SERVER_URL = 'http://localhost:8080/api/detect/proxy';
-    
+
     button.addEventListener('click', () => {
-        const formData = new FormData(form);
-        button.disabled = true; // 버튼 비활성화
-        resultDiv.innerHTML = "요청 중 입니다....";    
-        
-        fetch(SERVER_URL, {
+        const format = document.querySelector('input[name="format"]:checked').value;
+        const formData = new FormData();
+        formData.append('message', form.querySelector('input[name="message"]').value);
+        formData.append('file', form.querySelector('input[name="file"]').files[0]);
+
+        button.disabled = true;
+        resultDiv.innerHTML = '요청 중 입니다....';
+
+        fetch(`${SERVER_URL}?format=${format}`, {
             method: 'POST',
             body: formData
         })
         .then(response => {
-            if (!response.ok) throw new Error("서버 응답 오류: " + response.status);
+            if (!response.ok) throw new Error('서버 응답 오류: ' + response.status);
             return response.json();
         })
         .then(data => {
-            resultDiv.innerHTML = `<strong>${data.message}</strong><br>`;
+            const quality = data.format === 'url' ? '90%' : '70%';
+            resultDiv.innerHTML =
+                `<strong>${data.message}</strong><br>` +
+                `<div class="meta">응답 형식: <b>${data.format.toUpperCase()}</b> | 품질: ${quality} | ` +
+                `image 값: <code>${data.image.substring(0, 60)}${data.image.length > 60 ? '...' : ''}</code></div>`;
+
             if (data.image) {
                 const img = document.createElement('img');
-                img.src = "data:image/jpg;base64," + data.image; // Base64 인코딩된 이미지 데이터
+                if (data.format === 'url') {
+                    img.src = data.image;
+                } else {
+                    img.src = 'data:image/jpeg;base64,' + data.image;
+                }
                 resultDiv.appendChild(img);
             }
         })
@@ -44,10 +71,9 @@
             resultDiv.innerHTML = `<span style="color:red;">오류 발생: ${error.message}</span>`;
         })
         .finally(() => {
-            button.disabled = false; // 버튼 재활성화
+            button.disabled = false;
         });
     });
 </script>
-    // 서버의 업로드 엔드포인트 URL
 </body>
 </html>

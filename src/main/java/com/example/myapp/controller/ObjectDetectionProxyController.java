@@ -17,11 +17,17 @@ public class ObjectDetectionProxyController {
     private WebClient webClient;
 
     @PostMapping("/api/detect/proxy")
-    public String service(@RequestParam("message") String message, @RequestParam("file") MultipartFile file) {
+    public String service(
+            @RequestParam("message") String message,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "format", defaultValue = "base64") String format) {
+
         MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();
         bodyBuilder.part("message", message);
         bodyBuilder.part("file", file.getResource());
-        String result = webClient.post().uri("/detect")
+
+        String result = webClient.post()
+                .uri("/detect?format=" + format)
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
                 .retrieve()
